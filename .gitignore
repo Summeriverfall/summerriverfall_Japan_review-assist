@@ -1,0 +1,7 @@
+# local overrides / secrets
+js/config.local.js
+.env
+.env.*
+*.pem
+.DS_Store
+Thumbs.db

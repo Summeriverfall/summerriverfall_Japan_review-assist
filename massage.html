@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>评论辅助</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="shell">
+    <div class="lang-switch" id="langSwitch" role="group" aria-label="语言">
+      <button type="button" data-lang="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      <button type="button" data-lang="ja" aria-pressed="false">日本語</button>
+    </div>
+
+    <header class="top">
+      <p class="eyebrow" id="typeLabel">按摩・放松</p>
+      <h1 id="storeName">本店</h1>
+      <p class="sub" id="pageSub">多选几项（含来访目的、同行），帮你写成更长、更具体的评价。可手改，再复制去谷歌粘贴。</p>
+    </header>
+
+    <section class="card">
+      <h2 id="hQuick">快速选择</h2>
+      <form id="questionForm"></form>
+    </section>
+
+    <section class="card">
+      <h2 id="hImpression">你的印象（可选）</h2>
+      <textarea id="freeNote" placeholder="例如：肩颈按完轻松不少，店在楼上好找…" rows="3"></textarea>
+      <p class="hint" id="noteHint">自由输入会当作改写参考。改完后点下面按钮才会按印象重写。</p>
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" id="btnRegenNote">按印象重新生成</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 id="hPreview">评论预览</h2>
+      <p id="previewHint">请先答完上面全部问题，预览会出现在这里。</p>
+      <div id="previewPanel" hidden>
+        <textarea id="previewText" rows="7" aria-label="评论正文，可手动修改"></textarea>
+        <p class="hint" id="previewEditHint">可直接改字。不满意就点「换一版话术」，每次都会换说法。</p>
+        <div class="actions">
+          <button type="button" class="btn btn-ghost" id="btnRegen">换一版话术</button>
+          <button type="button" class="btn btn-primary" id="btnCopy">复制评论</button>
+          <button type="button" class="btn btn-secondary" id="btnOpen">打开评论页</button>
+        </div>
+      </div>
+      <p class="status" id="genStatus" aria-live="polite"></p>
+    </section>
+
+    <p class="foot-note" id="footNote">请使用门店二维码进入</p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/generate.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    ReviewAssistApp.init("massage");
+  </script>
+</body>
+</html>
