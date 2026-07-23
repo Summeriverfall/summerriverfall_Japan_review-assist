@@ -38,7 +38,8 @@
       statusGenerating: "生成预览…",
       statusRegen: "正在换一版话术…",
       statusGemini: "已用 Gemini 生成（{model}）· 可点「换一版话术」",
-      statusNoKey: "尚未配置 API Key，当前为本地话术 · 配置后会更自然",
+      statusNoKey:
+        "尚未配置代理或 API Key。线上请部署 Cloudflare Worker 并填写 geminiProxyUrl；本地可建 config.local.js。",
       statusApiFail: "Gemini 调用失败，已用本地话术。原因：{error}",
       statusApiInvalidKey:
         "API Key 鉴权失败。请确认已从 aistudio.google.com/apikey 复制完整密钥（可为 AQ. 或 AIza 开头），写入 config.js 的 geminiApiKey 后刷新。",
@@ -82,7 +83,8 @@
       statusGenerating: "Generating preview…",
       statusRegen: "Writing another version…",
       statusGemini: "Generated with Gemini ({model}) · tap “Another version”",
-      statusNoKey: "No API key yet — using local draft. Configure a key for better phrasing.",
+      statusNoKey:
+        "No proxy/API key yet — using local draft. For GitHub Pages set geminiProxyUrl (Cloudflare Worker).",
       statusApiFail: "Gemini failed; using local draft. Reason: {error}",
       statusApiInvalidKey:
         "API key auth failed. Paste the full key from aistudio.google.com/apikey (AQ. or AIza) into geminiApiKey in config.js, then refresh.",
@@ -125,7 +127,8 @@
       statusGenerating: "プレビュー生成中…",
       statusRegen: "別バージョン作成中…",
       statusGemini: "Geminiで生成（{model}）·「別バージョン」で再生成可",
-      statusNoKey: "APIキー未設定のためローカル文です。設定すると自然になります。",
+      statusNoKey:
+        "プロキシ/APIキー未設定のためローカル文です。GitHub Pages では geminiProxyUrl（Cloudflare Worker）を設定してください。",
       statusApiFail: "Gemini失敗。ローカル文を使用。理由：{error}",
       statusApiInvalidKey:
         "APIキー認証に失敗しました。aistudio.google.com/apikey の完全なキー（AQ. または AIza）を config.js の geminiApiKey に貼り付けて更新してください。",

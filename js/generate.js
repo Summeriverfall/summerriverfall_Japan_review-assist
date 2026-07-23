@@ -1136,17 +1136,8 @@
     return cleaned || null;
   }
 
-  function callGeminiModel(key, model, prompt, lang, length) {
-    lang = normLang(lang);
-    length = normLength(length);
-    // 原生 Gemini 端点；新版 Auth Key（AQ.）与旧版 Standard Key（AIza）都可用
-    // 优先用 x-goog-api-key，避免部分环境下 query key 鉴权异常
-    var url =
-      "https://generativelanguage.googleapis.com/v1beta/models/" +
-      encodeURIComponent(model) +
-      ":generateContent";
-
-    var body = {
+  function buildGeminiBody(prompt, lang, length) {
+    return {
       systemInstruction: {
         parts: [{ text: systemInstructionFor(lang) }]
       },
@@ -1162,29 +1153,33 @@
         }
       }
     };
+  }
 
-    var headers = {
-      "Content-Type": "application/json",
-      "x-goog-api-key": String(key || "").trim()
-    };
-
-    return fetch(url, {
+  function postGemini(requestUrl, headers, fetchBody, geminiBody, model, lang, length) {
+    return fetch(requestUrl, {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(fetchBody)
     }).then(function (r) {
       return r.json().then(function (data) {
         if (
           !r.ok &&
           data &&
           data.error &&
-          /thinking|Thinking/i.test(String(data.error.message || ""))
+          /thinking|Thinking/i.test(String(data.error.message || "")) &&
+          geminiBody &&
+          geminiBody.generationConfig &&
+          geminiBody.generationConfig.thinkingConfig
         ) {
-          delete body.generationConfig.thinkingConfig;
-          return fetch(url, {
+          delete geminiBody.generationConfig.thinkingConfig;
+          var retryBody =
+            fetchBody && fetchBody.body === geminiBody
+              ? { model: model, body: geminiBody }
+              : geminiBody;
+          return fetch(requestUrl, {
             method: "POST",
             headers: headers,
-            body: JSON.stringify(body)
+            body: JSON.stringify(retryBody)
           }).then(function (r2) {
             return r2.json().then(function (data2) {
               return finishGemini(r2, data2, model, lang, length);
@@ -1194,6 +1189,35 @@
         return finishGemini(r, data, model, lang, length);
       });
     });
+  }
+
+  function callGeminiModel(key, model, prompt, lang, length, proxyUrl) {
+    lang = normLang(lang);
+    length = normLength(length);
+    var geminiBody = buildGeminiBody(prompt, lang, length);
+    var headers = { "Content-Type": "application/json" };
+
+    // 线上推荐走代理，避免公开 Key 被 Google 泄露拦截
+    if (proxyUrl) {
+      return postGemini(
+        proxyUrl,
+        headers,
+        { model: model, body: geminiBody },
+        geminiBody,
+        model,
+        lang,
+        length
+      );
+    }
+
+    // 本地直连：query key（浏览器更稳妥）
+    var url =
+      "https://generativelanguage.googleapis.com/v1beta/models/" +
+      encodeURIComponent(model) +
+      ":generateContent?key=" +
+      encodeURIComponent(String(key || "").trim());
+
+    return postGemini(url, headers, geminiBody, geminiBody, model, lang, length);
   }
 
   function finishGemini(r, data, model, lang, length) {
@@ -1233,7 +1257,8 @@
     length = normLength(length);
     var cfg = global.REVIEW_ASSIST_CONFIG || {};
     var key = (cfg.geminiApiKey || "").trim();
-    if (!key) return Promise.resolve({ ok: false, reason: "no_key" });
+    var proxyUrl = (cfg.geminiProxyUrl || "").trim();
+    if (!proxyUrl && !key) return Promise.resolve({ ok: false, reason: "no_key" });
 
     // 新项目优先 3.x：2.5 / 部分 2.0 对新用户返回 404 或配额受限
     var primary = cfg.geminiModel || "gemini-3.1-flash-lite";
@@ -1271,7 +1296,7 @@
           error: lastErr ? String(lastErr.message || lastErr) : "unknown"
         });
       }
-      return callGeminiModel(key, models[i], prompt, lang, length).then(
+      return callGeminiModel(key, models[i], prompt, lang, length, proxyUrl).then(
         function (res) {
           return { ok: true, text: res.text, model: res.model };
         },
@@ -1290,7 +1315,10 @@
     remote: generateWithGemini,
     hasKey: function () {
       var cfg = global.REVIEW_ASSIST_CONFIG || {};
-      return !!(cfg.geminiApiKey && String(cfg.geminiApiKey).trim());
+      return !!(
+        (cfg.geminiProxyUrl && String(cfg.geminiProxyUrl).trim()) ||
+        (cfg.geminiApiKey && String(cfg.geminiApiKey).trim())
+      );
     }
   };
 })(window);
