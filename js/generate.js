@@ -1136,8 +1136,17 @@
     return cleaned || null;
   }
 
-  function buildGeminiBody(prompt, lang, length) {
-    return {
+  function callGeminiModel(key, model, prompt, lang, length) {
+    lang = normLang(lang);
+    length = normLength(length);
+    // 原生 Gemini 端点；新版 Auth Key（AQ.）与旧版 Standard Key（AIza）都可用
+    // 优先用 x-goog-api-key，避免部分环境下 query key 鉴权异常
+    var url =
+      "https://generativelanguage.googleapis.com/v1beta/models/" +
+      encodeURIComponent(model) +
+      ":generateContent";
+
+    var body = {
       systemInstruction: {
         parts: [{ text: systemInstructionFor(lang) }]
       },
@@ -1153,37 +1162,29 @@
         }
       }
     };
-  }
 
-  function postGemini(requestUrl, headers, fetchBody, geminiBody, model, lang, length) {
-    var opts = {
+    var headers = {
+      "Content-Type": "application/json",
+      "x-goog-api-key": String(key || "").trim()
+    };
+
+    return fetch(url, {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(fetchBody),
-      referrerPolicy: "no-referrer",
-      redirect: "follow"
-    };
-    return fetch(requestUrl, opts).then(function (r) {
+      body: JSON.stringify(body)
+    }).then(function (r) {
       return r.json().then(function (data) {
         if (
+          !r.ok &&
           data &&
           data.error &&
-          /thinking|Thinking/i.test(String(data.error.message || "")) &&
-          geminiBody &&
-          geminiBody.generationConfig &&
-          geminiBody.generationConfig.thinkingConfig
+          /thinking|Thinking/i.test(String(data.error.message || ""))
         ) {
-          delete geminiBody.generationConfig.thinkingConfig;
-          var retryBody =
-            fetchBody && fetchBody.body === geminiBody
-              ? { model: model, body: geminiBody }
-              : geminiBody;
-          return fetch(requestUrl, {
+          delete body.generationConfig.thinkingConfig;
+          return fetch(url, {
             method: "POST",
             headers: headers,
-            body: JSON.stringify(retryBody),
-            referrerPolicy: "no-referrer",
-            redirect: "follow"
+            body: JSON.stringify(body)
           }).then(function (r2) {
             return r2.json().then(function (data2) {
               return finishGemini(r2, data2, model, lang, length);
@@ -1195,50 +1196,8 @@
     });
   }
 
-  function callGeminiModel(key, model, prompt, lang, length, proxyUrl) {
-    lang = normLang(lang);
-    length = normLength(length);
-    var geminiBody = buildGeminiBody(prompt, lang, length);
-
-    if (proxyUrl) {
-      // Apps Script：用 text/plain 避免 CORS 预检失败
-      var isGas = /script\.google\.com/i.test(proxyUrl);
-      var headers = {
-        "Content-Type": isGas
-          ? "text/plain;charset=utf-8"
-          : "application/json"
-      };
-      return postGemini(
-        proxyUrl,
-        headers,
-        { model: model, body: geminiBody },
-        geminiBody,
-        model,
-        lang,
-        length
-      );
-    }
-
-    var url =
-      "https://generativelanguage.googleapis.com/v1beta/models/" +
-      encodeURIComponent(model) +
-      ":generateContent?key=" +
-      encodeURIComponent(String(key || "").trim());
-
-    return postGemini(
-      url,
-      { "Content-Type": "application/json" },
-      geminiBody,
-      geminiBody,
-      model,
-      lang,
-      length
-    );
-  }
-
   function finishGemini(r, data, model, lang, length) {
-    // Apps Script 代理常固定返回 HTTP 200，错误在 JSON 的 error 字段里
-    if ((data && data.error) || !r.ok) {
+    if (!r.ok) {
       var msg =
         (data && data.error && data.error.message) || "HTTP " + r.status;
       throw new Error(msg);
@@ -1274,29 +1233,7 @@
     length = normLength(length);
     var cfg = global.REVIEW_ASSIST_CONFIG || {};
     var key = (cfg.geminiApiKey || "").trim();
-    var proxyUrl = (cfg.geminiProxyUrl || "").trim();
-    // Vercel 同域部署时自动走 /api/gemini（无需再填绝对地址）
-    if (
-      !proxyUrl &&
-      typeof location !== "undefined" &&
-      /\.vercel\.app$/i.test(location.hostname)
-    ) {
-      proxyUrl = "/api/gemini";
-    }
-    var onPages =
-      typeof location !== "undefined" && /github\.io$/i.test(location.hostname);
-
-    // GitHub Pages 浏览器直连会被拒，必须走代理
-    if (onPages && !proxyUrl) {
-      return Promise.resolve({
-        ok: false,
-        reason: "api_error",
-        error:
-          "GitHub Pages 直连会被拦截。请用 Vercel 打开站点，或填 geminiProxyUrl。"
-      });
-    }
-
-    if (!proxyUrl && !key) return Promise.resolve({ ok: false, reason: "no_key" });
+    if (!key) return Promise.resolve({ ok: false, reason: "no_key" });
 
     // 新项目优先 3.x：2.5 / 部分 2.0 对新用户返回 404 或配额受限
     var primary = cfg.geminiModel || "gemini-3.1-flash-lite";
@@ -1334,7 +1271,7 @@
           error: lastErr ? String(lastErr.message || lastErr) : "unknown"
         });
       }
-      return callGeminiModel(key, models[i], prompt, lang, length, proxyUrl).then(
+      return callGeminiModel(key, models[i], prompt, lang, length).then(
         function (res) {
           return { ok: true, text: res.text, model: res.model };
         },
@@ -1353,10 +1290,7 @@
     remote: generateWithGemini,
     hasKey: function () {
       var cfg = global.REVIEW_ASSIST_CONFIG || {};
-      return !!(
-        (cfg.geminiProxyUrl && String(cfg.geminiProxyUrl).trim()) ||
-        (cfg.geminiApiKey && String(cfg.geminiApiKey).trim())
-      );
+      return !!(cfg.geminiApiKey && String(cfg.geminiApiKey).trim());
     }
   };
 })(window);

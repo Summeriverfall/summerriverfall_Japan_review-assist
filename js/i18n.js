@@ -41,7 +41,7 @@
       statusNoKey: "尚未配置 API Key，当前为本地话术 · 配置后会更自然",
       statusApiFail: "Gemini 调用失败，已用本地话术。原因：{error}",
       statusApiInvalidKey:
-        "线上直连 Gemini 会被拦截。请按 proxy/google-apps-script.js 部署代理，把 /exec 地址填入 config.js 的 geminiProxyUrl。",
+        "API Key 鉴权失败。请确认已从 aistudio.google.com/apikey 复制完整密钥（可为 AQ. 或 AIza 开头），写入 config.js 的 geminiApiKey 后刷新。",
       statusNeedAnswers: "请先答完这 3 个问题",
       statusEmptyCopy: "还没有可复制的内容",
       statusCopied: "已复制，可前往评论页粘贴",
