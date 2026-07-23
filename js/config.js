@@ -20,8 +20,8 @@
  *   bar.html?id=demo-bar
  */
 window.REVIEW_ASSIST_CONFIG = {
-  // ↓↓↓ 把 Gemini Key 贴在这里（勿把真实 Key 提交到公开仓库）↓↓↓
-  geminiApiKey: "",
+  // ↓↓↓ Gemini Key（静态站前端可见，建议在 AI Studio 设 HTTP referrer 限制）↓↓↓
+  geminiApiKey: "AQ.Ab8RN6JGYs-O7I-8FHa2uGD324nRTDZNAXnUwVxOStw0KrLarQ",
 
   // 主模型（失败会自动尝试其他 flash）
   geminiModel: "gemini-2.5-flash-lite",
