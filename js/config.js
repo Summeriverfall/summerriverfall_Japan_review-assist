@@ -9,10 +9,11 @@
  *   bar.html?id=demo-bar
  */
 window.REVIEW_ASSIST_CONFIG = {
-  // 线上代理 URL（Apps Script 的 /exec 地址）。有值时优先走代理。
+  // 线上必填：代理 URL（填入后 GitHub Pages 才能用 Gemini）
+  // Apps Script: https://script.google.com/macros/s/XXXX/exec
+  // 或 Vercel: https://你的项目.vercel.app/api/gemini
   geminiProxyUrl: "",
 
-  // 本地直连用；线上有代理时可不依赖此字段
   geminiApiKey: "AQ.Ab8RN6L-8UNLwjN3rBvga5RCVgolQ5wV0OixP2mWBeQAsYvBIA",
 
   geminiModel: "gemini-3.1-flash-lite",

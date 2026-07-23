@@ -1275,6 +1275,14 @@
     var cfg = global.REVIEW_ASSIST_CONFIG || {};
     var key = (cfg.geminiApiKey || "").trim();
     var proxyUrl = (cfg.geminiProxyUrl || "").trim();
+    // Vercel 同域部署时自动走 /api/gemini（无需再填绝对地址）
+    if (
+      !proxyUrl &&
+      typeof location !== "undefined" &&
+      /\.vercel\.app$/i.test(location.hostname)
+    ) {
+      proxyUrl = "/api/gemini";
+    }
     var onPages =
       typeof location !== "undefined" && /github\.io$/i.test(location.hostname);
 
@@ -1284,7 +1292,7 @@
         ok: false,
         reason: "api_error",
         error:
-          "GitHub Pages 需配置 geminiProxyUrl。打开 proxy/google-apps-script.js 按步骤部署后填入。"
+          "GitHub Pages 直连会被拦截。请用 Vercel 打开站点，或填 geminiProxyUrl。"
       });
     }
 
