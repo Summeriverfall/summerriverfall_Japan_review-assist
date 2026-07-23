@@ -16,7 +16,8 @@
  */
 window.REVIEW_ASSIST_CONFIG = {
   // 线上代理（Apps Script 网页应用 URL，以 /exec 结尾）
-  geminiProxyUrl: "",
+  geminiProxyUrl:
+    "https://script.google.com/macros/s/AKfycbz6YeLp5LJ_z0os8ZmciE1QeqC9HfZtdYW6tCHN86WAsy7vtxv9JS-a2Hyvm_o_gvoU/exec",
 
   // 本地直连用
   geminiApiKey: "AQ.Ab8RN6L-8UNLwjN3rBvga5RCVgolQ5wV0OixP2mWBeQAsYvBIA",
