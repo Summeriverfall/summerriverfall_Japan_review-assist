@@ -41,7 +41,7 @@
       statusNoKey: "尚未配置 API Key，当前为本地话术 · 配置后会更自然",
       statusApiFail: "Gemini 调用失败，已用本地话术。原因：{error}",
       statusApiInvalidKey:
-        "API Key 鉴权失败。请确认已从 aistudio.google.com/apikey 复制完整密钥（可为 AQ. 或 AIza 开头），写入 config.js 的 geminiApiKey 后刷新。",
+        "Gemini 鉴权失败。本地请检查 geminiApiKey；线上请配置 geminiProxyUrl（见 proxy/google-apps-script.js）。",
       statusNeedAnswers: "请先答完这 3 个问题",
       statusEmptyCopy: "还没有可复制的内容",
       statusCopied: "已复制，可前往评论页粘贴",

@@ -29,8 +29,8 @@
 
   function hasApiKey() {
     var cfg = window.REVIEW_ASSIST_CONFIG || {};
-    var fromCfg = !!(cfg.geminiApiKey && String(cfg.geminiApiKey).trim());
-    if (fromCfg) return true;
+    if (cfg.geminiProxyUrl && String(cfg.geminiProxyUrl).trim()) return true;
+    if (cfg.geminiApiKey && String(cfg.geminiApiKey).trim()) return true;
     return !!(
       window.ReviewAssistGenerate &&
       window.ReviewAssistGenerate.hasKey &&
