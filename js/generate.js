@@ -1160,13 +1160,12 @@
       method: "POST",
       headers: headers,
       body: JSON.stringify(fetchBody),
-      // 与本地行为对齐：不带页面 Referer，减少线上鉴权被拒
-      referrerPolicy: "no-referrer"
+      referrerPolicy: "no-referrer",
+      redirect: "follow"
     };
     return fetch(requestUrl, opts).then(function (r) {
       return r.json().then(function (data) {
         if (
-          !r.ok &&
           data &&
           data.error &&
           /thinking|Thinking/i.test(String(data.error.message || "")) &&
@@ -1183,7 +1182,8 @@
             method: "POST",
             headers: headers,
             body: JSON.stringify(retryBody),
-            referrerPolicy: "no-referrer"
+            referrerPolicy: "no-referrer",
+            redirect: "follow"
           }).then(function (r2) {
             return r2.json().then(function (data2) {
               return finishGemini(r2, data2, model, lang, length);
@@ -1199,10 +1199,15 @@
     lang = normLang(lang);
     length = normLength(length);
     var geminiBody = buildGeminiBody(prompt, lang, length);
-    var headers = { "Content-Type": "application/json" };
 
-    // 线上推荐走代理，避免公开 Key 被 Google 泄露拦截
     if (proxyUrl) {
+      // Apps Script：用 text/plain 避免 CORS 预检失败
+      var isGas = /script\.google\.com/i.test(proxyUrl);
+      var headers = {
+        "Content-Type": isGas
+          ? "text/plain;charset=utf-8"
+          : "application/json"
+      };
       return postGemini(
         proxyUrl,
         headers,
@@ -1214,18 +1219,26 @@
       );
     }
 
-    // 本地直连：query key（浏览器更稳妥）
     var url =
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       encodeURIComponent(model) +
       ":generateContent?key=" +
       encodeURIComponent(String(key || "").trim());
 
-    return postGemini(url, headers, geminiBody, geminiBody, model, lang, length);
+    return postGemini(
+      url,
+      { "Content-Type": "application/json" },
+      geminiBody,
+      geminiBody,
+      model,
+      lang,
+      length
+    );
   }
 
   function finishGemini(r, data, model, lang, length) {
-    if (!r.ok) {
+    // Apps Script 代理常固定返回 HTTP 200，错误在 JSON 的 error 字段里
+    if ((data && data.error) || !r.ok) {
       var msg =
         (data && data.error && data.error.message) || "HTTP " + r.status;
       throw new Error(msg);
@@ -1262,6 +1275,19 @@
     var cfg = global.REVIEW_ASSIST_CONFIG || {};
     var key = (cfg.geminiApiKey || "").trim();
     var proxyUrl = (cfg.geminiProxyUrl || "").trim();
+    var onPages =
+      typeof location !== "undefined" && /github\.io$/i.test(location.hostname);
+
+    // GitHub Pages 浏览器直连会被拒，必须走代理
+    if (onPages && !proxyUrl) {
+      return Promise.resolve({
+        ok: false,
+        reason: "api_error",
+        error:
+          "GitHub Pages 需配置 geminiProxyUrl。打开 proxy/google-apps-script.js 按步骤部署后填入。"
+      });
+    }
+
     if (!proxyUrl && !key) return Promise.resolve({ ok: false, reason: "no_key" });
 
     // 新项目优先 3.x：2.5 / 部分 2.0 对新用户返回 404 或配额受限
