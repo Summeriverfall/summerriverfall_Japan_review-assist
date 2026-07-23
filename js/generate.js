@@ -1156,11 +1156,14 @@
   }
 
   function postGemini(requestUrl, headers, fetchBody, geminiBody, model, lang, length) {
-    return fetch(requestUrl, {
+    var opts = {
       method: "POST",
       headers: headers,
-      body: JSON.stringify(fetchBody)
-    }).then(function (r) {
+      body: JSON.stringify(fetchBody),
+      // 与本地行为对齐：不带页面 Referer，减少线上鉴权被拒
+      referrerPolicy: "no-referrer"
+    };
+    return fetch(requestUrl, opts).then(function (r) {
       return r.json().then(function (data) {
         if (
           !r.ok &&
@@ -1179,7 +1182,8 @@
           return fetch(requestUrl, {
             method: "POST",
             headers: headers,
-            body: JSON.stringify(retryBody)
+            body: JSON.stringify(retryBody),
+            referrerPolicy: "no-referrer"
           }).then(function (r2) {
             return r2.json().then(function (data2) {
               return finishGemini(r2, data2, model, lang, length);
