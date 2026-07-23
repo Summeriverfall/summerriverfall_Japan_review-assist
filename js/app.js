@@ -28,6 +28,9 @@
   }
 
   function hasApiKey() {
+    var cfg = window.REVIEW_ASSIST_CONFIG || {};
+    var fromCfg = !!(cfg.geminiApiKey && String(cfg.geminiApiKey).trim());
+    if (fromCfg) return true;
     return !!(
       window.ReviewAssistGenerate &&
       window.ReviewAssistGenerate.hasKey &&
@@ -341,14 +344,24 @@
           );
           return;
         }
-        if (!hasApiKey()) {
+        var reason = (res && res.reason) || "";
+        var err = (res && res.error) || "request failed";
+        if (reason === "no_key" || !hasApiKey()) {
           apply(localText, ui.statusNoKey);
           return;
         }
-        var err = (res && res.error) || "request failed";
         apply(
           localText,
           I18n.format(ui.statusApiFail, { error: err }),
+          true
+        );
+      }).catch(function (err) {
+        ui = getUi();
+        apply(
+          localText,
+          I18n.format(ui.statusApiFail, {
+            error: err && err.message ? err.message : String(err || "unknown")
+          }),
           true
         );
       });
