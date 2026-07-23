@@ -76,6 +76,7 @@
     var store = resolveStore(getParams().id, ui);
     var answers = {};
     var activeIds = pickQuestionIds(data.questions, QUESTION_COUNT, []);
+    var reviewLength = "long";
     var generating = false;
     var lastText = "";
 
@@ -92,6 +93,7 @@
     var btnRegen = qs("#btnRegen");
     var btnCopy = qs("#btnCopy");
     var btnOpen = qs("#btnOpen");
+    var lengthSwitch = qs("#lengthSwitch");
     var langSwitch = qs("#langSwitch");
 
     function getUi() {
@@ -142,18 +144,34 @@
 
       var hQuick = qs("#hQuick");
       var hImpression = qs("#hImpression");
+      var hLength = qs("#hLength");
       var hPreview = qs("#hPreview");
       var noteHint = qs("#noteHint");
+      var lengthHint = qs("#lengthHint");
       var previewEditHint = qs("#previewEditHint");
       var foot = qs("#footNote");
 
       if (hQuick) hQuick.textContent = ui.quickSelect;
       if (hImpression) hImpression.textContent = ui.impression;
+      if (hLength) hLength.textContent = ui.lengthLabel;
       if (hPreview) hPreview.textContent = ui.preview;
       if (elHint) elHint.textContent = ui.previewHint;
       if (noteHint) noteHint.textContent = ui.noteHint;
+      if (lengthHint) lengthHint.textContent = ui.lengthHint;
       if (previewEditHint) previewEditHint.textContent = ui.previewEditHint;
       if (foot) foot.textContent = ui.foot;
+
+      if (lengthSwitch) {
+        lengthSwitch.setAttribute("aria-label", ui.lengthLabel);
+        qsa("[data-length]", lengthSwitch).forEach(function (btn) {
+          var len = btn.getAttribute("data-length");
+          btn.classList.toggle("is-active", len === reviewLength);
+          btn.setAttribute("aria-pressed", len === reviewLength ? "true" : "false");
+          if (len === "short") btn.textContent = ui.lengthShort;
+          else if (len === "long") btn.textContent = ui.lengthLong;
+          else btn.textContent = ui.lengthMedium;
+        });
+      }
 
       if (elNote) {
         elNote.placeholder =
@@ -263,7 +281,11 @@
       setBusy(true);
 
       ui = getUi();
-      var forceNew = reason === "regen" || reason === "note" || reason === "lang";
+      var forceNew =
+        reason === "regen" ||
+        reason === "note" ||
+        reason === "lang" ||
+        reason === "length";
       setStatus(forceNew ? ui.statusRegen : ui.statusGenerating);
 
       var note = elNote ? elNote.value : "";
@@ -277,7 +299,8 @@
         note,
         store.name,
         avoid,
-        lang
+        lang,
+        reviewLength
       );
 
       var apply = function (finalText, statusMsg, isErr) {
@@ -288,7 +311,8 @@
             note,
             store.name,
             avoid,
-            lang
+            lang,
+            reviewLength
           );
         }
         elPreview.value = finalText;
@@ -306,7 +330,8 @@
         store.name,
         labels,
         avoid,
-        lang
+        lang,
+        reviewLength
       ).then(function (res) {
         ui = getUi();
         if (res && res.ok && res.text) {
@@ -357,6 +382,18 @@
         var btn = e.target.closest("[data-lang]");
         if (!btn) return;
         switchLang(btn.getAttribute("data-lang"));
+      });
+    }
+
+    if (lengthSwitch) {
+      lengthSwitch.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-length]");
+        if (!btn) return;
+        var next = btn.getAttribute("data-length");
+        if (!next || next === reviewLength) return;
+        reviewLength = next;
+        applyChrome();
+        if (allAnswered()) runGenerate("length");
       });
     }
 

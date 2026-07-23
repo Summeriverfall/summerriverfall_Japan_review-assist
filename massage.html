@@ -39,6 +39,16 @@
     </section>
 
     <section class="card">
+      <h2 id="hLength">评论长度</h2>
+      <div class="len-switch" id="lengthSwitch" role="group" aria-label="评论长度">
+        <button type="button" data-length="short">短</button>
+        <button type="button" data-length="medium">中</button>
+        <button type="button" data-length="long" class="is-active" aria-pressed="true">长</button>
+      </div>
+      <p class="hint" id="lengthHint">短约几句，中等一段，长评更具体。改长度会重新生成。</p>
+    </section>
+
+    <section class="card">
       <h2 id="hPreview">评论预览</h2>
       <p id="previewHint">请先答完上面全部问题，预览会出现在这里。</p>
       <div id="previewPanel" hidden>

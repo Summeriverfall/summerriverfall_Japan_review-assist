@@ -523,6 +523,109 @@
     return "zh";
   }
 
+  function normLength(len) {
+    len = String(len || "").toLowerCase();
+    if (len === "short" || len === "long") return len;
+    return "medium";
+  }
+
+  /** 目标篇幅说明（给模型 + 本地裁剪） */
+  function lengthGuide(lang, length) {
+    lang = normLang(lang);
+    length = normLength(length);
+    if (lang === "en") {
+      if (length === "short")
+        return {
+          label: "SHORT",
+          rule: "Length: SHORT — about 40–70 words, ONE short paragraph only. Still complete the last sentence.",
+          minChars: 80,
+          minLetters: 35,
+          minHan: 0,
+          targetSents: 2,
+          paragraphs: false
+        };
+      if (length === "long")
+        return {
+          label: "LONG",
+          rule: "Length: LONG — about 160–260 words, 2–4 short paragraphs with concrete traveler details.",
+          minChars: 280,
+          minLetters: 140,
+          minHan: 0,
+          targetSents: 7,
+          paragraphs: true
+        };
+      return {
+        label: "MEDIUM",
+        rule: "Length: MEDIUM — about 90–140 words, 1–2 paragraphs.",
+        minChars: 160,
+        minLetters: 80,
+        minHan: 0,
+        targetSents: 4,
+        paragraphs: true
+      };
+    }
+    if (lang === "ja") {
+      if (length === "short")
+        return {
+          label: "短",
+          rule: "分量：短文。おおよそ70〜120字、1段落のみ。必ず書き切る。",
+          minChars: 50,
+          minLetters: 0,
+          minHan: 40,
+          targetSents: 2,
+          paragraphs: false
+        };
+      if (length === "long")
+        return {
+          label: "長",
+          rule: "分量：長文。おおよそ280〜420字、2〜4段落。具体的な体験を厚めに。",
+          minChars: 220,
+          minLetters: 0,
+          minHan: 180,
+          targetSents: 7,
+          paragraphs: true
+        };
+      return {
+        label: "中",
+        rule: "分量：中くらい。おおよそ150〜230字、1〜2段落。",
+        minChars: 110,
+        minLetters: 0,
+        minHan: 90,
+        targetSents: 4,
+        paragraphs: true
+      };
+    }
+    if (length === "short")
+      return {
+        label: "短",
+        rule: "篇幅：短评。约 60～110 字，只写 1 小段，仍须写完收尾。",
+        minChars: 45,
+        minLetters: 0,
+        minHan: 40,
+        targetSents: 2,
+        paragraphs: false
+      };
+    if (length === "long")
+      return {
+        label: "长",
+        rule: "篇幅：长评。约 280～420 字，分 2～4 段，多写具体情境与感受细节。",
+        minChars: 220,
+        minLetters: 0,
+        minHan: 200,
+        targetSents: 7,
+        paragraphs: true
+      };
+    return {
+      label: "中",
+      rule: "篇幅：中等。约 140～220 字，1～2 段。",
+      minChars: 100,
+      minLetters: 0,
+      minHan: 90,
+      targetSents: 4,
+      paragraphs: true
+    };
+  }
+
   function getFrag(lang) {
     lang = normLang(lang);
     if (lang === "en") return FRAG_EN;
@@ -616,8 +719,10 @@
     return asSent(p || c, lang);
   }
 
-  function localOnce(type, answers, note, lang) {
+  function localOnce(type, answers, note, lang, length) {
     lang = normLang(lang);
+    length = normLength(length);
+    var guide = lengthGuide(lang, length);
     var pack = getFrag(lang);
     var f = pack[type];
     if (!f) return "";
@@ -640,20 +745,24 @@
       if (oid && f[k] && f[k][oid]) sents.push(asSent(pick(f[k][oid]), lang));
     });
 
-    // 只有 3 题时信息偏少：补 1～2 句不矛盾的通用细节
+    // 只有 3 题时信息偏少：按长度补通用细节
     var FILL = {
       zh: {
         massage: [
           "房间干净安静，整体很放松。",
           "力度可以按需求调整，体验比较舒服。",
           "店员态度不错，沟通也顺畅。",
-          "逛累了过来放松一下刚刚好。"
+          "逛累了过来放松一下刚刚好。",
+          "按完肩膀和腿都轻松不少，整个人松下来了。",
+          "个室隐私感不错，做完也不急着赶人。"
         ],
         bar: [
           "店里氛围轻松，坐着不累。",
           "服务态度友好，点单也方便。",
           "环境干净，适合歇脚聊几句。",
-          "路过进来坐坐，感觉挺合适。"
+          "路过进来坐坐，感觉挺合适。",
+          "酒水口感顺，待一会儿很舒服。",
+          "位置好找，逛完顺路过来正好。"
         ]
       },
       en: {
@@ -661,13 +770,17 @@
           "The room was clean and quiet.",
           "Pressure was easy to adjust and felt comfortable.",
           "Staff were friendly and easy to talk to.",
-          "A nice reset after a long day of walking."
+          "A nice reset after a long day of walking.",
+          "Shoulders and legs felt lighter afterward.",
+          "Private enough to fully unwind."
         ],
         bar: [
           "The vibe was easygoing.",
           "Staff were friendly and ordering was simple.",
           "Clean spot to sit and unwind.",
-          "A good place to drop in while nearby."
+          "A good place to drop in while nearby.",
+          "Drinks went down smoothly.",
+          "Easy to find after walking around."
         ]
       },
       ja: {
@@ -675,33 +788,39 @@
           "部屋は清潔で静かでした。",
           "力加減を調整してもらえ、気持ちよかったです。",
           "接客も丁寧で話しやすかったです。",
-          "歩き疲れたあとに寄るのにちょうど良いです。"
+          "歩き疲れたあとに寄るのにちょうど良いです。",
+          "肩や足が軽くなり、リラックスできました。",
+          "個室で落ち着いて受けられました。"
         ],
         bar: [
           "雰囲気は落ち着いて過ごしやすいです。",
           "接客が良く、注文もスムーズでした。",
           "清潔で、ちょっと休憩するのに向いています。",
-          "近くに来たときに寄るのに良さそうです。"
+          "近くに来たときに寄るのに良さそうです。",
+          "ドリンクも飲みやすく、長居しやすいです。",
+          "場所も分かりやすく助かりました。"
         ]
       }
     };
-    var fillPool = (FILL[lang] && FILL[lang][type]) || FILL.zh.massage;
-    while (sents.length < 4 && fillPool.length) {
+    var fillPool = ((FILL[lang] && FILL[lang][type]) || FILL.zh.massage).slice();
+    var need = guide.targetSents;
+    while (sents.length < need && fillPool.length) {
       var extra = pick(fillPool);
+      fillPool = fillPool.filter(function (x) {
+        return x !== extra;
+      });
       if (
         sents.some(function (s) {
           return s.indexOf(extra.slice(0, 8)) >= 0;
         })
       ) {
-        fillPool = fillPool.filter(function (x) {
-          return x !== extra;
-        });
         continue;
       }
       sents.push(asSent(extra, lang));
-      fillPool = fillPool.filter(function (x) {
-        return x !== extra;
-      });
+    }
+
+    if (length === "short" && sents.length > 3) {
+      sents = sents.slice(0, 3);
     }
 
     var tone = detectTone(note, lang);
@@ -745,15 +864,15 @@
 
     var joiner = lang === "en" ? " " : "";
     var body;
-    if (sents.length >= 5) {
+    if (guide.paragraphs && sents.length >= 5) {
       var mid = Math.ceil(sents.length * 0.45);
       body = sents.slice(0, mid).join(joiner) + "\n\n" + sents.slice(mid).join(joiner);
     } else {
       body = sents.join(joiner);
     }
 
-    // 约 1/4 概率在结尾加一个轻表情（本地兜底）
-    if (tone === "positive" && Math.random() < 0.28) {
+    // 约 1/4 概率在结尾加一个轻表情（本地兜底；短评更少）
+    if (tone === "positive" && Math.random() < (length === "short" ? 0.12 : 0.28)) {
       var tips =
         lang === "en"
           ? [" :)", " ✨"]
@@ -765,26 +884,30 @@
     return body;
   }
 
-  function localGenerate(type, answers, note, storeName, avoidText, lang) {
+  function localGenerate(type, answers, note, storeName, avoidText, lang, length) {
     lang = normLang(lang);
+    length = normLength(length);
     var best = "";
     for (var i = 0; i < 8; i++) {
-      var t = localOnce(type, answers, note, lang);
+      var t = localOnce(type, answers, note, lang, length);
       if (!similar(t, avoidText)) return t;
       best = t;
     }
-    return best || localOnce(type, answers, note, lang);
+    return best || localOnce(type, answers, note, lang, length);
   }
 
-  function buildPrompt(type, answers, note, storeName, labels, avoidText, nonce, lang) {
+  function buildPrompt(type, answers, note, storeName, labels, avoidText, nonce, lang, length) {
     lang = normLang(lang);
+    length = normLength(length);
+    var guide = lengthGuide(lang, length);
     var lines = [];
-    var useEmoji = /[02468]/.test(String(nonce).slice(-1));
+    var useEmoji = length !== "short" && /[02468]/.test(String(nonce).slice(-1));
     var isBar = type === "bar";
 
     if (lang === "en") {
       lines.push("Task: Write one complete Google Maps review in the style of real traveler reviews.");
       lines.push("Language: English only. Output review body only — no titles, steps, drafting, Markdown.");
+      lines.push(guide.rule);
       lines.push("");
       lines.push("Style to imitate (natural traveler tone):");
       lines.push("- Customer only answered 3 short questions — use them as anchors.");
@@ -793,7 +916,7 @@
       );
       lines.push("- Do NOT invent prices, exact minutes, therapist names, or service types that conflict with selections.");
       lines.push("- Open with context when possible; soft close with return / good for travelers.");
-      lines.push("- Length: ~90–180 words, 1–3 short paragraphs. Must finish with a full sentence.");
+      lines.push("- Must finish with a full sentence. Hit the requested length — do not write a short blurb if LONG/MEDIUM was chosen.");
       if (useEmoji) {
         lines.push("- You MAY add ONE light emoji or kaomoji at the end (e.g. :) or ✨). Only once.");
       } else {
@@ -802,7 +925,6 @@
       lines.push("");
       lines.push("Ban: Step/Drafting/Outline; “5 stars!!!”, “perfect in every way”, fake competitor drama.");
       lines.push("Mild “highly recommend for travelers…” is OK once if it sounds natural.");
-      lines.push("Only 3 answers were collected — write a full review anyway with light plausible fill-in.");
       lines.push("");
       lines.push("Seed: " + nonce);
       if (avoidText) {
@@ -819,13 +941,14 @@
         lines.push("Customer note (blend; don’t copy whole): " + note.trim());
       }
       lines.push("");
-      lines.push("Write the COMPLETE review now:");
+      lines.push("Write the COMPLETE review now (" + guide.label + "):");
       return lines.join("\n");
     }
 
     if (lang === "ja") {
       lines.push("タスク：旅行者っぽい自然なGoogleマップ口コミを1本、最後まで書く。");
       lines.push("言語：日本語のみ。本文以外（説明・手順・下書き・Markdown）禁止。");
+      lines.push(guide.rule);
       lines.push("");
       lines.push("文体：");
       lines.push("- 回答は3問のみ。それを軸にする");
@@ -834,7 +957,7 @@
       );
       lines.push("- 料金・正確な分数・人名、選択と矛盾するメニューは捏造しない");
       lines.push("- 締め：旅行中の休憩に良い／また来たい程度");
-      lines.push("- 分量：180〜320字、1〜3段落。必ず句点で終える");
+      lines.push("- 指定の分量を守る。長文指定なら短くまとめない");
       if (useEmoji) {
         lines.push("- 末尾に絵文字か顔文字を1つだけ可（例：😊／(^_^)）。多用禁止");
       } else {
@@ -858,21 +981,22 @@
         lines.push("メモ（溶かす）：" + note.trim());
       }
       lines.push("");
-      lines.push("口コミ本文を完成させてください：");
+      lines.push("口コミ本文を完成させてください（" + guide.label + "）：");
       return lines.join("\n");
     }
 
     lines.push("任务：写一条可直接发到谷歌地图的完整顾客评论。");
     lines.push("语言：简体中文为主。禁止英文整句、禁止英文提纲。");
     lines.push("只输出评论正文，不要标题/步骤/草稿/Markdown。");
+    lines.push(guide.rule);
     lines.push("");
-    lines.push("文风请贴近真实游客长评（参考下列结构，不要照抄原文）：");
+    lines.push("文风请贴近真实游客评论：");
     lines.push("1) 顾客只答了 3 道题——以这 3 条为锚点写完整评论");
     lines.push(
-      "2) 信息偏少时，可少量合理补充不矛盾的细节（如走累了、房间干净安静、态度好、力度可调）；禁止编造价格、精确分钟、技师姓名，以及与勾选冲突的项目"
+      "2) 信息偏少时，可合理补充不矛盾的细节（如走累了、房间干净安静、态度好、力度可调）；禁止编造价格、精确分钟、技师姓名，以及与勾选冲突的项目"
     );
     lines.push("3) 有同行/项目等勾选时自然写进情境；结尾温和表达还会再来或适合观光后放松");
-    lines.push("4) 篇幅约 120～280 字，1～3 小段，必须写完并以句号/感叹号收尾");
+    lines.push("4) 必须写完并以句号/感叹号收尾；若选了「长」或「中」，不要写成两三句敷衍短评");
     lines.push("5) 可用一句自然推荐，禁止「强烈推荐！！！五星好评」刷评腔");
     if (useEmoji) {
       lines.push("6) 本次允许在结尾偶尔加 1 个表情或颜文字（如 😊 / (｡◕‿◕｡) / ～），不要堆多个");
@@ -898,7 +1022,7 @@
       lines.push("若备注含中性/小缺点，可略带真实不足，仍偏正面。");
     }
     lines.push("");
-    lines.push("现在写出完整评论正文：");
+    lines.push("现在写出完整评论正文（" + guide.label + "）：");
     return lines.join("\n");
   }
 
@@ -914,9 +1038,11 @@
   }
 
   /** 清洗模型泄漏的步骤/草稿标记；不合格则返回空串 */
-  function sanitizeReviewText(raw, lang) {
+  function sanitizeReviewText(raw, lang, length) {
     if (!raw) return "";
     lang = normLang(lang);
+    length = normLength(length);
+    var guide = lengthGuide(lang, length);
     var t = String(raw).trim();
     t = t.replace(/^```[\w]*\n?/, "").replace(/\n?```$/, "").trim();
     t = t.replace(/^["「『]+|["」』]+$/g, "");
@@ -938,11 +1064,10 @@
       .replace(/^\s*[-*•]\s*/gm, "")
       .trim();
 
-    // 行内残留的英文提纲碎片
     t = t
       .replace(/\*?Step\s*\d+\s*[:：][^*\n]*/gi, "")
       .replace(/\*?Drafting\s+\w+\s*[:：]?\*?/gi, "")
-      .replace(/\s{2,}/g, " ")
+      .replace(/[ \t]{2,}/g, " ")
       .trim();
 
     if (/^(step\s*\d|drafting|outline)\b/i.test(t) && t.length < 120) return "";
@@ -953,35 +1078,36 @@
     var cjk = han + kana;
 
     if (lang === "en") {
-      if (letters < 60) return "";
+      if (letters < guide.minLetters) return "";
       if (cjk > 40) return "";
       return t;
     }
     if (lang === "ja") {
-      if (cjk < 30) return "";
+      if (cjk < Math.max(30, Math.floor(guide.minHan * 0.7))) return "";
       if (letters > 80 && letters > cjk * 0.8) return "";
       return t;
     }
-    // zh
-    if (han < 28) return "";
+    if (han < Math.max(28, Math.floor(guide.minHan * 0.7))) return "";
     if (letters > 60 && letters > han * 0.6) return "";
     return t;
   }
 
-  function looksIncomplete(text, lang) {
+  function looksIncomplete(text, lang, length) {
     var t = String(text || "").trim();
     if (!t) return true;
     lang = normLang(lang);
+    length = normLength(length);
+    var guide = lengthGuide(lang, length);
+    var bare = t.replace(/\s+/g, "");
     if (lang === "en") {
-      if (t.length < 120) return true;
+      if (t.length < guide.minChars) return true;
       return !/[.!?…]["')\]]*$/.test(t);
     }
-    var chars = t.replace(/\s+/g, "").length;
-    if (chars < 80) return true;
-    return !/[。！？…」』）】]$/.test(t);
+    if (bare.length < guide.minChars) return true;
+    return !/[。！？…」』）】]$/.test(t) && !/[。！？…]$/.test(bare);
   }
 
-  function extractText(data, lang) {
+  function extractText(data, lang, length) {
     var parts =
       data &&
       data.candidates &&
@@ -994,7 +1120,6 @@
     for (var i = 0; i < parts.length; i++) {
       var p = parts[i];
       if (!p || !p.text) continue;
-      // Gemini 2.5+ 可能带 thought 草稿，跳过
       if (p.thought === true) continue;
       chunks.push(p.text);
     }
@@ -1007,19 +1132,19 @@
       }
     }
     if (!chunks.length) return null;
-    var cleaned = sanitizeReviewText(chunks.join("\n"), lang);
+    var cleaned = sanitizeReviewText(chunks.join("\n"), lang, length);
     return cleaned || null;
   }
 
-  function callGeminiModel(key, model, prompt, lang) {
+  function callGeminiModel(key, model, prompt, lang, length) {
     lang = normLang(lang);
+    length = normLength(length);
     var url =
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       encodeURIComponent(model) +
       ":generateContent?key=" +
       encodeURIComponent(key);
 
-    // thinking 会占用 maxOutputTokens，易导致正文说一半就断；尽量关掉
     var body = {
       systemInstruction: {
         parts: [{ text: systemInstructionFor(lang) }]
@@ -1029,7 +1154,7 @@
         temperature: 0.85,
         topP: 0.9,
         topK: 40,
-        maxOutputTokens: 4096,
+        maxOutputTokens: length === "long" ? 4096 : length === "short" ? 1024 : 2048,
         thinkingConfig: {
           thinkingBudget: 0,
           includeThoughts: false
@@ -1043,7 +1168,6 @@
       body: JSON.stringify(body)
     }).then(function (r) {
       return r.json().then(function (data) {
-        // 部分模型不支持 thinkingConfig=0，去掉后再试一次
         if (
           !r.ok &&
           data &&
@@ -1057,16 +1181,16 @@
             body: JSON.stringify(body)
           }).then(function (r2) {
             return r2.json().then(function (data2) {
-              return finishGemini(r2, data2, model, lang);
+              return finishGemini(r2, data2, model, lang, length);
             });
           });
         }
-        return finishGemini(r, data, model, lang);
+        return finishGemini(r, data, model, lang, length);
       });
     });
   }
 
-  function finishGemini(r, data, model, lang) {
+  function finishGemini(r, data, model, lang, length) {
     if (!r.ok) {
       var msg =
         (data && data.error && data.error.message) || "HTTP " + r.status;
@@ -1077,26 +1201,35 @@
       data.candidates &&
       data.candidates[0] &&
       data.candidates[0].finishReason;
-    var text = extractText(data, lang);
+    var text = extractText(data, lang, length);
     if (!text) {
       throw new Error(
         reason && reason !== "STOP" ? "blocked:" + reason : "bad_model_output"
       );
     }
-    if (reason === "MAX_TOKENS" || looksIncomplete(text, lang)) {
+    if (reason === "MAX_TOKENS" || looksIncomplete(text, lang, length)) {
       throw new Error("truncated_output");
     }
     return { text: text, model: model };
   }
 
-  function generateWithGemini(type, answers, note, storeName, labels, avoidText, lang) {
+  function generateWithGemini(
+    type,
+    answers,
+    note,
+    storeName,
+    labels,
+    avoidText,
+    lang,
+    length
+  ) {
     lang = normLang(lang);
+    length = normLength(length);
     var cfg = global.REVIEW_ASSIST_CONFIG || {};
     var key = (cfg.geminiApiKey || "").trim();
     if (!key) return Promise.resolve({ ok: false, reason: "no_key" });
 
     var primary = cfg.geminiModel || "gemini-2.5-flash-lite";
-    // 优先 lite / 2.5-flash（可关 thinking）；flash-latest 易截断，放后面
     var models = [
       primary,
       "gemini-2.5-flash-lite",
@@ -1116,7 +1249,8 @@
       labels,
       avoidText,
       nonce,
-      lang
+      lang,
+      length
     );
 
     var lastErr = null;
@@ -1128,7 +1262,7 @@
           error: lastErr ? String(lastErr.message || lastErr) : "unknown"
         });
       }
-      return callGeminiModel(key, models[i], prompt, lang).then(
+      return callGeminiModel(key, models[i], prompt, lang, length).then(
         function (res) {
           return { ok: true, text: res.text, model: res.model };
         },
