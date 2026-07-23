@@ -67,6 +67,14 @@
     return preferred.concat(rest).slice(0, Math.min(n, ids.length));
   }
 
+  function formatApiError(err, ui) {
+    var msg = String(err || "");
+    if (/invalid authentication|API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(msg)) {
+      return ui.statusApiInvalidKey;
+    }
+    return I18n.format(ui.statusApiFail, { error: msg });
+  }
+
   function init(pageType) {
     var I18n = window.ReviewAssistI18n;
     if (!I18n) return;
@@ -352,16 +360,14 @@
         }
         apply(
           localText,
-          I18n.format(ui.statusApiFail, { error: err }),
+          formatApiError(err, ui),
           true
         );
       }).catch(function (err) {
         ui = getUi();
         apply(
           localText,
-          I18n.format(ui.statusApiFail, {
-            error: err && err.message ? err.message : String(err || "unknown")
-          }),
+          formatApiError(err && err.message ? err.message : err, ui),
           true
         );
       });

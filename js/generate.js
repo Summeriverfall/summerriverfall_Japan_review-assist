@@ -1139,11 +1139,12 @@
   function callGeminiModel(key, model, prompt, lang, length) {
     lang = normLang(lang);
     length = normLength(length);
+    // 原生 Gemini 端点；新版 Auth Key（AQ.）与旧版 Standard Key（AIza）都可用
+    // 优先用 x-goog-api-key，避免部分环境下 query key 鉴权异常
     var url =
       "https://generativelanguage.googleapis.com/v1beta/models/" +
       encodeURIComponent(model) +
-      ":generateContent?key=" +
-      encodeURIComponent(key);
+      ":generateContent";
 
     var body = {
       systemInstruction: {
@@ -1162,9 +1163,14 @@
       }
     };
 
+    var headers = {
+      "Content-Type": "application/json",
+      "x-goog-api-key": String(key || "").trim()
+    };
+
     return fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
       body: JSON.stringify(body)
     }).then(function (r) {
       return r.json().then(function (data) {
@@ -1177,7 +1183,7 @@
           delete body.generationConfig.thinkingConfig;
           return fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers,
             body: JSON.stringify(body)
           }).then(function (r2) {
             return r2.json().then(function (data2) {
@@ -1229,12 +1235,15 @@
     var key = (cfg.geminiApiKey || "").trim();
     if (!key) return Promise.resolve({ ok: false, reason: "no_key" });
 
-    var primary = cfg.geminiModel || "gemini-2.5-flash-lite";
+    // 新项目优先 3.x：2.5 / 部分 2.0 对新用户返回 404 或配额受限
+    var primary = cfg.geminiModel || "gemini-3.1-flash-lite";
     var models = [
       primary,
-      "gemini-2.5-flash-lite",
-      "gemini-2.5-flash",
+      "gemini-3.1-flash-lite",
+      "gemini-3.5-flash-lite",
       "gemini-3.5-flash",
+      "gemini-3.6-flash",
+      "gemini-flash-lite-latest",
       "gemini-flash-latest"
     ].filter(function (m, i, arr) {
       return m && arr.indexOf(m) === i;

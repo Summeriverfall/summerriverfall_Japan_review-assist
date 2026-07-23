@@ -4,7 +4,9 @@
  * ========== Gemini（本页可直接用，推荐）==========
  * 1. 打开：https://aistudio.google.com/apikey
  * 2. 登录 Google → Create API key
- * 3. 把 Key 贴到下方 geminiApiKey（一般以 AIza 开头）
+ * 3. 把 Key 贴到下方 geminiApiKey
+ *    - 新版 Auth Key：AQ. 开头（AI Studio 现在默认发这个，正常）
+ *    - 旧版 Standard Key：AIza 开头（也可）
  * 4. 保存后刷新；成功时状态栏显示「已用 Gemini 生成」
  *
  * ========== 关于 GPT / ChatGPT ==========
@@ -20,11 +22,11 @@
  *   bar.html?id=demo-bar
  */
 window.REVIEW_ASSIST_CONFIG = {
-  // ↓↓↓ Gemini Key（静态站前端可见，建议在 AI Studio 设 HTTP referrer 限制）↓↓↓
-  geminiApiKey: "AQ.Ab8RN6JGYs-O7I-8FHa2uGD324nRTDZNAXnUwVxOStw0KrLarQ",
+  // ↓↓↓ AI Studio 密钥（AQ. 或 AIza 均可）↓↓↓
+  geminiApiKey: "AQ.Ab8RN6L-8UNLwjN3rBvga5RCVgolQ5wV0OixP2mWBeQAsYvBIA",
 
-  // 主模型（失败会自动尝试其他 flash）
-  geminiModel: "gemini-2.5-flash-lite",
+  // 主模型（失败会自动尝试其他 flash；新项目请用 3.x，2.5 对新用户不可用）
+  geminiModel: "gemini-3.1-flash-lite",
 
   stores: {
     "demo-massage": {
